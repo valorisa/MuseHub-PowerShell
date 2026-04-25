@@ -59,19 +59,22 @@ function Get-MuseHubCacheSize {
             continue
         }
 
-        $files  = Get-ChildItem -Path $cache.Path -Recurse -File -ErrorAction SilentlyContinue
-        $sizeKB = [math]::Round(($files | Measure-Object -Property Length -Sum).Sum / 1KB, 2)
-        $totalKB += $sizeKB
+        $files     = @(Get-ChildItem -Path $cache.Path -Recurse -File -ErrorAction SilentlyContinue)
+        $measure   = $files | Measure-Object -Property Length -Sum
+        $sumBytes  = if ($null -ne $measure -and $null -ne $measure.Sum) { $measure.Sum } else { 0 }
+        $sizeKB    = [math]::Round($sumBytes / 1KB, 2)
+        $fileCount = $files.Count
+        $totalKB  += $sizeKB
 
         $details.Add([PSCustomObject]@{
             Label  = $cache.Label
             Path   = $cache.Path
             SizeKB = $sizeKB
             Exists = $true
-            Files  = $files.Count
+            Files  = $fileCount
         })
 
-        Write-MuseLog -Level DEBUG -Message "  $($cache.Label) : $sizeKB Ko ($($files.Count) fichiers)"
+        Write-MuseLog -Level DEBUG -Message "  $($cache.Label) : $sizeKB Ko ($fileCount fichiers)"
     }
 
     $result = [PSCustomObject]@{

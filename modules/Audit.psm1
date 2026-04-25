@@ -12,8 +12,6 @@
     Licence : MIT
 #>
 
-#Requires -Modules @{ ModuleName='Logger'; ModuleVersion='0.0.1' }
-
 Set-StrictMode -Version Latest
 
 #region Constantes privées
