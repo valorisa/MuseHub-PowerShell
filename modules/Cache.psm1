@@ -28,16 +28,6 @@ $script:CachePaths = @(
 #region Fonctions publiques
 
 function Get-MuseHubCacheSize {
-    <#
-    .SYNOPSIS
-        Calcule et retourne la taille totale des caches Muse Hub présents sur le système.
-    .OUTPUTS
-        PSCustomObject avec TotalSizeKB, TotalSizeMB, Details (liste par répertoire).
-    .EXAMPLE
-        $cache = Get-MuseHubCacheSize
-        Write-Host "Cache total : $($cache.TotalSizeMB) Mo"
-        $cache.Details | Format-Table
-    #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
     param ()
@@ -63,7 +53,7 @@ function Get-MuseHubCacheSize {
         $measure   = $files | Measure-Object -Property Length -Sum
         $sumBytes  = if ($null -ne $measure -and $null -ne $measure.Sum) { $measure.Sum } else { 0 }
         $sizeKB    = [math]::Round($sumBytes / 1KB, 2)
-        $fileCount = $files.Count
+        $fileCount = @($files).Count  # ✅ FIX 1 : Force array
         $totalKB  += $sizeKB
 
         $details.Add([PSCustomObject]@{
@@ -88,23 +78,6 @@ function Get-MuseHubCacheSize {
 }
 
 function Clear-MuseHubCache {
-    <#
-    .SYNOPSIS
-        Supprime les fichiers de cache Muse Hub de manière sécurisée.
-    .DESCRIPTION
-        Cible uniquement les répertoires de cache connus. Ne supprime
-        aucun plugin installé, preset ou fichier de configuration utilisateur.
-    .PARAMETER IncludeLogs
-        Si présent, supprime également les logs applicatifs de Muse Hub.
-    .PARAMETER Silent
-        Supprime l'affichage console.
-    .OUTPUTS
-        PSCustomObject avec FreedKB, FreedMB, DeletedFiles, Errors.
-    .EXAMPLE
-        Clear-MuseHubCache
-    .EXAMPLE
-        Clear-MuseHubCache -IncludeLogs -Silent
-    #>
     [CmdletBinding(SupportsShouldProcess)]
     [OutputType([PSCustomObject])]
     param (
@@ -114,7 +87,6 @@ function Clear-MuseHubCache {
 
     Write-MuseLog -Level INFO -Message "=== Nettoyage du cache Muse Hub ===" -Silent:$Silent
 
-    # Calculer la taille avant nettoyage
     $sizeBefore = Get-MuseHubCacheSize
 
     $freedKB      = 0.0
@@ -122,7 +94,6 @@ function Clear-MuseHubCache {
     $errors       = [System.Collections.Generic.List[string]]::new()
 
     foreach ($cache in $script:CachePaths) {
-        # Exclure les logs si non demandé
         if ($cache.Label -like '*Logs*' -and -not $IncludeLogs) {
             Write-MuseLog -Level DEBUG -Message "  Ignoré (logs) : $($cache.Path)" -Silent:$Silent
             continue
@@ -148,10 +119,10 @@ function Clear-MuseHubCache {
             }
         }
 
-        # Supprimer les répertoires vides
+        # ✅ FIX 2 : Directories vide - null-safe Count
         Get-ChildItem -Path $cache.Path -Recurse -Directory -ErrorAction SilentlyContinue |
             Sort-Object FullName -Descending |
-            Where-Object { (Get-ChildItem $_.FullName -Force).Count -eq 0 } |
+            Where-Object { @((Get-ChildItem $_.FullName -Force -ErrorAction SilentlyContinue)).Count -eq 0 } |
             ForEach-Object { Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
     }
 
@@ -164,8 +135,9 @@ function Clear-MuseHubCache {
 
     Write-MuseLog -Level INFO -Message "=== Cache nettoyé : $($result.FreedMB) Mo libérés, $($result.DeletedFiles) fichier(s) supprimé(s) ===" -Silent:$Silent
 
-    if ($errors.Count -gt 0) {
-        Write-MuseLog -Level WARNING -Message "$($errors.Count) erreur(s) lors du nettoyage. Consultez les logs pour les détails." -Silent:$Silent
+    # ✅ FIX 3 : Errors.Count null-safe
+    if (@($errors).Count -gt 0) {
+        Write-MuseLog -Level WARNING -Message "$(@($errors).Count) erreur(s) lors du nettoyage. Consultez les logs pour les détails." -Silent:$Silent
     }
 
     return $result
