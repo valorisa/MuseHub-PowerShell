@@ -37,7 +37,7 @@ function Write-Fail { param ([string] $Message) Write-Host "    ✘ $Message" -F
 
 Write-Host ""
 Write-Host "  ╔══════════════════════════════════════════════╗" -ForegroundColor Cyan
-Write-Host "  ║   musehub-pwsh — Installation des dépendances ║" -ForegroundColor Cyan
+Write-Host "  ║   musehub-pwsh — Installation des dépendances║" -ForegroundColor Cyan
 Write-Host "  ╚══════════════════════════════════════════════╝" -ForegroundColor Cyan
 Write-Host ""
 
