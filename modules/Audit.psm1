@@ -39,20 +39,6 @@ $script:KnownMusePlugins = @(
 #region Fonctions publiques
 
 function Get-MuseHubPlugins {
-    <#
-    .SYNOPSIS
-        Retourne la liste des plugins VST3 Muse Hub installés sur le système.
-    .PARAMETER AdditionalScanPaths
-        Chemins supplémentaires à scanner en plus des chemins VST3 par défaut.
-    .OUTPUTS
-        System.Collections.Generic.List[PSCustomObject]
-        Chaque objet possède les propriétés : Name, Version, Path, SizeKB, InstalledDate, Type.
-    .EXAMPLE
-        $plugins = Get-MuseHubPlugins
-        $plugins | Format-Table -AutoSize
-    .EXAMPLE
-        Get-MuseHubPlugins -AdditionalScanPaths 'D:\VST3'
-    #>
     [CmdletBinding()]
     [OutputType([System.Collections.Generic.List[PSCustomObject]])]
     param (
@@ -102,14 +88,6 @@ function Get-MuseHubPlugins {
 }
 
 function Get-MuseHubApplications {
-    <#
-    .SYNOPSIS
-        Retourne les applications Muse Hub installées (MuseScore, Audacity, Muse Hub).
-    .OUTPUTS
-        System.Collections.Generic.List[PSCustomObject]
-    .EXAMPLE
-        Get-MuseHubApplications | Format-Table -AutoSize
-    #>
     [CmdletBinding()]
     [OutputType([System.Collections.Generic.List[PSCustomObject]])]
     param ()
@@ -118,7 +96,6 @@ function Get-MuseHubApplications {
 
     $results = [System.Collections.Generic.List[PSCustomObject]]::new()
 
-    # Recherche via le registre Windows (source la plus fiable)
     $registryPaths = @(
         'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
         'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
@@ -132,17 +109,45 @@ function Get-MuseHubApplications {
 
         Get-ChildItem -Path $regPath -ErrorAction SilentlyContinue | ForEach-Object {
             $app = Get-ItemProperty -Path $_.PSPath -ErrorAction SilentlyContinue
-            $isMuseApp = $museKeywords | Where-Object { $app.DisplayName -like "*$_*" }
+            
+            # ✅ FIX DÉFINITIF : DisplayName avec fallback ultra-sûr
+            if ($app.PSObject.Properties['DisplayName'] -and $app.DisplayName) {
+                $displayName = $app.DisplayName
+            } elseif ($_.PSChildName) {
+                $displayName = $_.PSChildName
+            } else {
+			    $displayName = 'Application inconnue'
+			}
 
-            if ($isMuseApp -and $app.DisplayName) {
+            $isMuseApp = $museKeywords | Where-Object { $displayName -like "*$_*" }
+
+            if ($isMuseApp -and $displayName -ne 'Application inconnue') {
+                $displayVersion = if ($app.PSObject.Properties['DisplayVersion'] -and $app.DisplayVersion) { 
+                    $app.DisplayVersion 
+                } else { 'N/A' }
+
+                $installLocation = if ($app.PSObject.Properties['InstallLocation'] -and $app.InstallLocation) { 
+                    $app.InstallLocation 
+                } else { 'N/A' }
+
+                $estimatedSize = if ($app.PSObject.Properties['EstimatedSize'] -and $app.EstimatedSize) { 
+                    $app.EstimatedSize 
+                } else { 0 }
+
+                $installDate = if ($app.PSObject.Properties['InstallDate'] -and $app.InstallDate) {
+                    try {
+                        [datetime]::ParseExact($app.InstallDate, 'yyyyMMdd', $null)
+                    } catch {
+                        $null
+                    }
+                } else { $null }
+
                 $entry = [PSCustomObject]@{
-                    Name          = $app.DisplayName
-                    Version       = if ($app.DisplayVersion) { $app.DisplayVersion } else { 'N/A' }
-                    Path          = if ($app.InstallLocation) { $app.InstallLocation } else { 'N/A' }
-                    SizeKB        = if ($app.EstimatedSize) { $app.EstimatedSize } else { 0 }
-                    InstalledDate = if ($app.InstallDate) {
-                                       [datetime]::ParseExact($app.InstallDate, 'yyyyMMdd', $null)
-                                   } else { $null }
+                    Name          = $displayName
+                    Version       = $displayVersion
+                    Path          = $installLocation
+                    SizeKB        = $estimatedSize
+                    InstalledDate = $installDate
                     Type          = 'Application'
                     Status        = 'Installé'
                 }
@@ -157,18 +162,6 @@ function Get-MuseHubApplications {
 }
 
 function Get-MuseHubInventory {
-    <#
-    .SYNOPSIS
-        Agrège plugins et applications en un inventaire complet.
-    .PARAMETER AdditionalVst3Paths
-        Chemins VST3 supplémentaires transmis à Get-MuseHubPlugins.
-    .OUTPUTS
-        PSCustomObject avec propriétés Plugins, Applications, GeneratedAt, TotalComponents, TotalSizeKB.
-    .EXAMPLE
-        $inv = Get-MuseHubInventory
-        $inv.Plugins | Format-Table
-        Write-Host "Total : $($inv.TotalComponents) composants"
-    #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
     param (
@@ -182,7 +175,11 @@ function Get-MuseHubInventory {
     $applications = Get-MuseHubApplications
 
     $allComponents = @($plugins) + @($applications)
-    $totalSizeKB   = ($allComponents | Measure-Object -Property SizeKB -Sum).Sum
+    
+    # ✅ FIX Count null-safe
+    $totalSizeKB = if ($allComponents) {
+        ($allComponents | Measure-Object -Property SizeKB -Sum -ErrorAction SilentlyContinue).Sum ?? 0
+    } else { 0 }
 
     $inventory = [PSCustomObject]@{
         Plugins         = $plugins
@@ -198,15 +195,6 @@ function Get-MuseHubInventory {
 }
 
 function Test-MuseHubInstallation {
-    <#
-    .SYNOPSIS
-        Vérifie l'intégrité de l'installation Muse Hub.
-    .OUTPUTS
-        PSCustomObject avec IsInstalled, ExecutablePath, Version, PresetsPath, CachePath.
-    .EXAMPLE
-        $check = Test-MuseHubInstallation
-        if ($check.IsInstalled) { Write-Host "Muse Hub $($check.Version) détecté." }
-    #>
     [CmdletBinding()]
     [OutputType([PSCustomObject])]
     param ()
@@ -249,7 +237,6 @@ function Get-PluginVersion {
     [CmdletBinding()]
     param ([string] $PluginPath)
 
-    # Tenter de lire la version depuis les métadonnées du fichier
     $dllCandidates = Get-ChildItem -Path $PluginPath -Filter '*.dll' -Recurse -ErrorAction SilentlyContinue |
         Select-Object -First 1
 
@@ -258,7 +245,7 @@ function Get-PluginVersion {
             $info = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllCandidates.FullName)
             if ($info.FileVersion) { return $info.FileVersion }
         } catch {
-            # Silencieux, on retourne une valeur par défaut
+            # Silencieux
         }
     }
 
