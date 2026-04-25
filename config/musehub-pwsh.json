@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/valorisa/musehub-pwsh/main/config/schema.json",
+  "musehub": {
+    "installPath": "C:\\Program Files\\Muse Hub",
+    "executablePath": "C:\\Program Files\\Muse Hub\\MuseHub.exe",
+    "version": "N/A",
+    "presetsPath": "%APPDATA%\\Muse Hub\\Presets",
+    "cachePath": "%LOCALAPPDATA%\\Muse Hub\\Cache",
+    "vst3ScanPaths": [
+      "C:\\Program Files\\Common Files\\VST3",
+      "%APPDATA%\\VST3",
+      "%LOCALAPPDATA%\\Programs\\Common\\VST3"
+    ]
+  },
+  "backup": {
+    "destination": "C:\\Users\\bbrod\\Projets\\musehub-pwsh\\backups",
+    "maxBackups": 10,
+    "compress": true,
+    "includeSampleLibraries": false
+  },
+  "report": {
+    "defaultFormat": "HTML",
+    "openAfterGeneration": true,
+    "theme": "dark"
+  },
+  "logging": {
+    "level": "INFO",
+    "maxLogFiles": 30,
+    "logPath": "C:\\Users\\bbrod\\Projets\\musehub-pwsh\\logs"
+  }
+}
