@@ -222,7 +222,7 @@ switch ($Action) {
     }
 
     'CheckUpdates' {
-        $updates = Get-MuseHubUpdates -Silent:$Silent
+        $updates = @(Get-MuseHubUpdates -Silent:$Silent)
         if ($updates.Count -eq 0) {
             Write-Host "`n  ✔ Tous les composants sont à jour.`n" -ForegroundColor Green
         } else {
@@ -232,7 +232,7 @@ switch ($Action) {
     }
 
     'Update' {
-        $updates = Get-MuseHubUpdates -Silent:$Silent
+        $updates = @(Get-MuseHubUpdates -Silent:$Silent)
         if ($updates.Count -eq 0) {
             Write-Host "`n  ✔ Aucune mise à jour nécessaire.`n" -ForegroundColor Green
         } else {

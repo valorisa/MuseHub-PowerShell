@@ -106,10 +106,10 @@ function Get-MuseHubUpdates {
         }
     }
 
-    if ($updates.Count -eq 0) {
+    if (@($updates).Count -eq 0) {
         Write-MuseLog -Level INFO -Message "Tous les composants sont à jour." -Silent:$Silent
     } else {
-        Write-MuseLog -Level INFO -Message "$($updates.Count) mise(s) à jour disponible(s)." -Silent:$Silent
+        Write-MuseLog -Level INFO -Message "$(@($updates).Count) mise(s) à jour disponible(s)." -Silent:$Silent
     }
 
     return $updates

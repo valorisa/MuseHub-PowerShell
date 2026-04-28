@@ -169,8 +169,8 @@ function New-MuseHubHtmlReport {
 
   <div class="cards">
     <div class="card"><div class="value">$($Inventory.TotalComponents)</div><div class="label">Composants totaux</div></div>
-    <div class="card"><div class="value">$($Inventory.Plugins.Count)</div><div class="label">Plugins VST3</div></div>
-    <div class="card"><div class="value">$($Inventory.Applications.Count)</div><div class="label">Applications</div></div>
+    <div class="card"><div class="value">$(@($Inventory.Plugins).Count)</div><div class="label">Plugins VST3</div></div>
+    <div class="card"><div class="value">$(@($Inventory.Applications).Count)</div><div class="label">Applications</div></div>
     <div class="card"><div class="value">${totalSizeMB} Mo</div><div class="label">Espace total estimé</div></div>
     <div class="card"><div class="value">$($Inventory.DurationSeconds)s</div><div class="label">Durée du scan</div></div>
   </div>

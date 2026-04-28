@@ -155,11 +155,11 @@ function Invoke-LogRotation {
 
     if (-not (Test-Path -Path $LogDirectory)) { return }
 
-    $logFiles = Get-ChildItem -Path $LogDirectory -Filter 'musehub-pwsh_*.log' |
-        Sort-Object LastWriteTime -Descending
+    $logFiles = @(Get-ChildItem -Path $LogDirectory -Filter 'musehub-pwsh_*.log' |
+        Sort-Object LastWriteTime -Descending)
 
     if ($logFiles.Count -gt $script:MaxLogFiles) {
-        $toDelete = $logFiles | Select-Object -Skip $script:MaxLogFiles
+        $toDelete = @($logFiles | Select-Object -Skip $script:MaxLogFiles)
         foreach ($file in $toDelete) {
             Remove-Item -Path $file.FullName -Force
             Write-MuseLog -Level DEBUG -Message "Log archivé supprimé : $($file.Name)"

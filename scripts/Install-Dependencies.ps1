@@ -59,6 +59,51 @@ if ($psVersion.Major -ge 7) {
 
 #endregion
 
+#region Étape 1b — Déblocage des fichiers du dépôt (Zone.Identifier)
+
+Write-Step "Étape 1b/5 — Déblocage des fichiers issus d'un téléchargement (Zone.Identifier)"
+
+# Lorsque le dépôt est téléchargé en ZIP depuis GitHub (plutôt que cloné via git),
+# Windows marque les fichiers avec un ADS NTFS "Zone.Identifier" qui bloque leur
+# exécution sous la policy par défaut. Unblock-File ne supprime QUE ce stream et
+# n'altère pas le contenu. On limite le scan aux fichiers .ps1/.psm1/.psd1 de
+# sous-répertoires connus du projet pour rester conservateur.
+
+$unblockTargets = @(
+    (Join-Path $projectRoot 'musehub-pwsh.ps1'),
+    (Join-Path $projectRoot 'modules'),
+    (Join-Path $projectRoot 'scripts'),
+    (Join-Path $projectRoot 'tests')
+) | Where-Object { Test-Path $_ }
+
+$unblockCount = 0
+foreach ($target in $unblockTargets) {
+    $files = if ((Get-Item $target).PSIsContainer) {
+        Get-ChildItem -Path $target -Recurse -File -Include '*.ps1','*.psm1','*.psd1' -ErrorAction SilentlyContinue
+    } else {
+        Get-Item -Path $target -ErrorAction SilentlyContinue
+    }
+
+    foreach ($file in $files) {
+        if (Get-Item -Path $file.FullName -Stream 'Zone.Identifier' -ErrorAction SilentlyContinue) {
+            try {
+                Unblock-File -Path $file.FullName -ErrorAction Stop
+                $unblockCount++
+            } catch {
+                Write-Warn "Impossible de débloquer $($file.FullName) : $_"
+            }
+        }
+    }
+}
+
+if ($unblockCount -gt 0) {
+    Write-Ok "$unblockCount fichier(s) débloqué(s) (Zone.Identifier retiré)."
+} else {
+    Write-Ok "Aucun fichier bloqué détecté."
+}
+
+#endregion
+
 #region Étape 2 — Installation des modules PSGallery
 
 Write-Step "Étape 2/5 — Installation des modules PowerShell requis"
