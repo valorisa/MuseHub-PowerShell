@@ -41,8 +41,6 @@ $RECYCLE.BIN/
 # ──────────────────────────────────────────
 # PowerShell
 # ──────────────────────────────────────────
-# Modules installés localement (doivent être installés via Install-Dependencies.ps1)
-Modules/
 *.psm1.bak
 *.ps1.bak
 
