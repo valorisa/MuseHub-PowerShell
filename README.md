@@ -571,5 +571,5 @@ Ce projet est distribué sous licence **MIT**. Consultez le fichier [LICENSE](LI
 
 ---
 
-*Dernière mise à jour : 24 avril 2025 — musehub-pwsh v1.0.0*
+*Dernière mise à jour : 28 avril 2026 — musehub-pwsh v1.0.0*
 
